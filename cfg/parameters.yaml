@@ -1,0 +1,17 @@
+tickers:
+  - D05.SI
+  - O39.SI
+  - U11.SI
+  - Z74.SI
+  - F34.SI
+  - C6L.SI
+  - C38U.SI
+  - BN4.SI
+  - S63.SI
+  - A17U.SI
+  - G13.SI
+benchmark_ticker: ES3.SI
+
+start_date: "2015-01-01"
+end_date: "2024-01-01"
+train_test_cut_off_date: "2022-12-31"
