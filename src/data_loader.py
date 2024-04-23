@@ -1,7 +1,7 @@
 import time
 import pandas as pd
 import yfinance as yf
-from typing import List, Optional
+from typing import List
 from loguru import logger
 
 
@@ -12,17 +12,17 @@ class DataLoader:
         tickers: List[str],
         start_date: str,
         end_date: str,
-        benchmark_ticker: str = "ES3.SI",
+        benchmark_ticker: str,
         interval: str = "1d",
         risk_free_rate: float = 0.0,
     ):
-        """Initializes the BASS class
+        """Initializes the DataLoader class
 
         Args:
             tickers (List[str]): A list of tickers chosen from SGX
             start_date (str): left bound of the date range (inclusive)
             end_date (str): right bound of the date range (exclusive)
-            benchmark_ticker (str, optional): Benchmark ticker that is used to represent the market. Defaults to "^STI".
+            benchmark_ticker (str, optional): Benchmark ticker that is used to represent the market.
             interval (str, optional): Interval of the pricing data. Defaults to "1d".
             risk_free_rate (float, optional): risk free rate for this calculation. Defaults to 0.0.
         """
@@ -68,7 +68,7 @@ class DataLoader:
         self.interval = interval
         self.risk_free_rate = risk_free_rate
         logger.info(
-            f"Initiliazing BASS calculation for {self.tickers} "
+            f"Initiliazing Data extraction for tickers: {self.tickers} and benchmark: {self.benchmark_ticker}"
             f"from {self.start_date} to {self.end_date}"
         )
         self.data = self.get_data()
@@ -127,25 +127,27 @@ class DataLoader:
         return train_data, test_data
 
 
-if __name__ == "__main__":
-    dl = DataLoader(
-        tickers=[
-            "D05.SI",
-            "O39.SI",
-            "U11.SI",
-            "Z74.SI",
-            "F34.SI",
-            "C6L.SI",
-            "C38U.SI",
-            "BN4.SI",
-            "S63.SI",
-            "A17U.SI",
-            "G13.SI",
-        ],
-        start_date="2015-01-01",
-        end_date="2024-01-01",
-    )
-    # train, test = dl.train_test_split("2022-12-31")
-    print(dl.data.head())
+# Sample usage
 
-    dl.data.to_csv("./data/price.csv")
+# if __name__ == "__main__":
+#     dl = DataLoader(
+#         tickers=[
+#             "D05.SI",
+#             "O39.SI",
+#             "U11.SI",
+#             "Z74.SI",
+#             "F34.SI",
+#             "C6L.SI",
+#             "C38U.SI",
+#             "BN4.SI",
+#             "S63.SI",
+#             "A17U.SI",
+#             "G13.SI",
+#         ],
+#         start_date="2015-01-01",
+#         end_date="2024-01-01",
+#     )
+#     # train, test = dl.train_test_split("2022-12-31")
+#     print(dl.data.head())
+
+#     dl.data.to_csv("./data/price.csv")
