@@ -12,7 +12,7 @@ class DataLoader:
         tickers: List[str],
         start_date: str,
         end_date: str,
-        benchmark_ticker: str = "^STI",
+        benchmark_ticker: str = "ES3.SI",
         interval: str = "1d",
         risk_free_rate: float = 0.0,
     ):
