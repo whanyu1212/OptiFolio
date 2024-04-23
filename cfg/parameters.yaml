@@ -15,3 +15,41 @@ benchmark_ticker: ES3.SI
 start_date: "2015-01-01"
 end_date: "2024-01-01"
 train_test_cut_off_date: "2022-12-31"
+
+
+sector_map:
+  - Financials
+  - Financials
+  - Financials
+  - Telecommunications
+  - Industrials
+  - Industrials
+  - Real Estate
+  - Energy
+  - Industrials
+  - Real Estate
+  - Consumer Discretionary
+
+sector_bounds_1:
+  Financials: [0.1, 0.6]
+  Real Estate: [0.05, 0.3]
+  Telecommunications: [0.02, 0.2]
+  Consumer Discretionary: [0.05, 0.3]
+  Industrials: [0.05, 0.3]
+  Energy: [0.02, 0.2]
+
+sector_bounds_2:
+  Financials: [0.05, 0.7]
+  Real Estate: [0.03, 0.35]
+  Telecommunications: [0.01, 0.25]
+  Consumer Discretionary: [0.03, 0.35]
+  Industrials: [0.03, 0.35]
+  Energy: [0.01, 0.25]
+
+sector_bounds_3:
+  Financials: [0.02, 0.8]
+  Real Estate: [0.01, 0.4]
+  Telecommunications: [0.01, 0.3]
+  Consumer Discretionary: [0.01, 0.4]
+  Industrials: [0.01, 0.4]
+  Energy: [0.01, 0.3]
