@@ -1,5 +1,6 @@
 import pandas as pd
-import yfinance as yf
+import numpy as np
+from loguru import logger
 from typing import Tuple, List, Dict
 from src.data_loader import DataLoader
 from src.port_optimizer import PortfolioOptimizer
@@ -7,14 +8,15 @@ from src.backtest import Backtest
 from src.utils import parse_yaml_cfg
 
 
-def load_data(cfg: dict) -> pd.DataFrame:
-    """Load data from the data loader
+def load_data(cfg: dict) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Load data using the DataLoader
+    class initialized
 
     Args:
         cfg (dict): config dictionary
 
     Returns:
-        pd.DataFrame: data
+        Tuple[pd.DataFrame, pd.DataFrame]: train and holdout data
     """
     dl = DataLoader(
         tickers=cfg["tickers"],
@@ -28,7 +30,16 @@ def load_data(cfg: dict) -> pd.DataFrame:
 
 def calculate_portfolio_parameters(
     df: pd.DataFrame,
-) -> Tuple[PortfolioOptimizer, pd.Series, pd.DataFrame]:
+) -> Tuple[PortfolioOptimizer, pd.Series, np.ndarray]:
+    """Calculate the mean and covariance matrix of asset returns
+
+    Args:
+        df (pd.DataFrame): input DataFrame
+
+    Returns:
+        Tuple[PortfolioOptimizer, pd.Series, np.ndarray]: PortfolioOptimizer object,
+        mean and covariance matrix
+    """
     po = PortfolioOptimizer(df)
     mu, S = po.calculate_mu_S()
     return po, mu, S
@@ -47,6 +58,23 @@ def optimize_portfolio_base(
     """
     po, mu, S = calculate_portfolio_parameters(df)
     optimized_weights = po.maximize_sharpe_ratio_base(mu, S)
+    weights_dict = {key: value for key, value in zip(mu.index, optimized_weights)}
+    return weights_dict
+
+
+def optimize_portfolio_by_mc(
+    df: pd.DataFrame,
+) -> dict:
+    """Optimize the portfolio for a target return
+
+    Args:
+        df (pd.DataFrame): A DataFrame of returns data
+
+    Returns:
+        dict: A dictionary containing the optimized portfolio weights
+    """
+    po, mu, S = calculate_portfolio_parameters(df)
+    optimized_weights = po.maximize_sharpe_ratio_by_mc(mu, S)
     weights_dict = {key: value for key, value in zip(mu.index, optimized_weights)}
     return weights_dict
 
@@ -73,23 +101,6 @@ def optimize_portfolio_w_sector(
     weights_dict = {
         key: value for key, value in zip(mu.index, optimized_weights_with_sectors)
     }
-    return weights_dict
-
-
-def optimize_portfolio_by_mc(
-    df: pd.DataFrame,
-) -> dict:
-    """Optimize the portfolio for a target return
-
-    Args:
-        df (pd.DataFrame): A DataFrame of returns data
-
-    Returns:
-        dict: A dictionary containing the optimized portfolio weights
-    """
-    po, mu, S = calculate_portfolio_parameters(df)
-    optimized_weights = po.maximize_sharpe_ratio_by_mc(mu, S)
-    weights_dict = {key: value for key, value in zip(mu.index, optimized_weights)}
     return weights_dict
 
 
@@ -122,15 +133,27 @@ def backtest_hold_out_dollar_amount(holdout: pd.DataFrame, optimized_weights: di
 
 
 def main():
+    logger.info("Starting the analysis")
     cfg = parse_yaml_cfg("./cfg/parameters.yaml")
     sector_map = cfg["sector_map"]
-    sector_bounds = {key: tuple(value) for key, value in cfg["sector_bounds_3"].items()}
+
+    # There are more sector bounds variation in the config file,
+    # but for the sake of simplicity, we will only use the first one
+    # for automation purposes
+    sector_bounds = {key: tuple(value) for key, value in cfg["sector_bounds_1"].items()}
+
+    # divide the data into train and holdout
     train, holdout = load_data(cfg)
+
+    # optimize the portfolio using the base method
     optimized_weights_base = optimize_portfolio_base(
         train.drop(columns=cfg["benchmark_ticker"], axis=1)
     )
+
     print(f"Optimized weights without sectors:\n {optimized_weights_base}")
     print("\n")
+
+    # optimize the portfolio by imposing sector constraints
     optimized_weights_w_sector = optimize_portfolio_w_sector(
         train.drop(columns=cfg["benchmark_ticker"], axis=1),
         sector_map,
@@ -138,21 +161,22 @@ def main():
     )
     print(f"Optimized weights with sectors:\n {optimized_weights_w_sector}")
     print("\n")
-    optimized_weights_mc = optimize_portfolio_by_mc(
-        train.drop(columns=cfg["benchmark_ticker"], axis=1)
-    )
-    print(f"Optimized weights by Monte Carlo:\n {optimized_weights_mc}")
-    sharpe_mc, benchmark_sharpe = backtest_hold_out_relative_return(
-        holdout, optimized_weights_mc
-    )
-    print(f"Sharpe Ratio by Monte Carlo: {sharpe_mc}")
-    print(f"Benchmark Sharpe Ratio: {benchmark_sharpe}")
 
-    sharpe, benchmark_sharpe = backtest_hold_out_dollar_amount(
-        holdout, optimized_weights_mc
+    sharpe_base, benchmark_sharpe = backtest_hold_out_relative_return(
+        holdout, optimized_weights_base
     )
-    print(f"Sharpe Ratio by sector: {sharpe}")
-    print(f"Benchmark Sharpe Ratio: {benchmark_sharpe}")
+    print(
+        f"Sharpe Ratio without sector constraints: {sharpe_base} vs Benchmark Sharpe Ratio: {benchmark_sharpe}"
+    )
+
+    sharpe_w_sectors, benchmark_sharpe = backtest_hold_out_dollar_amount(
+        holdout, optimized_weights_w_sector
+    )
+    print(
+        f"Sharpe Ratio by sector: {sharpe_w_sectors} vs Benchmark Sharpe Ratio: {benchmark_sharpe}"
+    )
+
+    logger.success("Analysis completed")
 
 
 if __name__ == "__main__":
