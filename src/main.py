@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from termcolor import colored
 from loguru import logger
 from typing import Tuple, List, Dict
 from src.data_loader import DataLoader
@@ -57,7 +58,7 @@ def optimize_portfolio_base(
         dict: A dictionary containing the optimized portfolio weights
     """
     po, mu, S = calculate_portfolio_parameters(df)
-    optimized_weights = po.maximize_sharpe_ratio_base(mu, S)
+    optimized_weights = po.maximize_sharpe_ratio_by_mc(mu, S)
     weights_dict = {key: value for key, value in zip(mu.index, optimized_weights)}
     return weights_dict
 
@@ -149,8 +150,10 @@ def main():
     optimized_weights_base = optimize_portfolio_base(
         train.drop(columns=cfg["benchmark_ticker"], axis=1)
     )
-
-    print(f"Optimized weights without sectors:\n {optimized_weights_base}")
+    print("\n")
+    print(colored("Optimized Weights without Sector Constraints:", "green"))
+    for key, value in optimized_weights_base.items():
+        print(f"{key}: {value}")
     print("\n")
 
     # optimize the portfolio by imposing sector constraints
@@ -159,7 +162,10 @@ def main():
         sector_map,
         sector_bounds,
     )
-    print(f"Optimized weights with sectors:\n {optimized_weights_w_sector}")
+    print("\n")
+    print(colored("Optimized Weights with Sector Constraints:", "green"))
+    for key, value in optimized_weights_w_sector.items():
+        print(f"{key}: {value}")
     print("\n")
 
     sharpe_base, benchmark_sharpe = backtest_hold_out_relative_return(
